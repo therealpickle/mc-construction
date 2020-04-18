@@ -79,13 +79,13 @@ def cmd_fill(regions, block):
 if __name__ == '__main__':
     print("Shape: size : commands : seconds to generate")
 
-    for i in range(17, 255, 16):
+    for i in range(17, 514, 16):
         t0 = time.time()
         s = shapes.HemisphereSolid(i)
         regions = generate_regions(s)
         print("Hemisphere: {} : {} : {:.6f}".format(i, len(regions), time.time()-t0))
 
-    for i in range(17, 255, 16):
+    for i in range(17, 514, 16):
         t0 = time.time()
         s = shapes.SphereSolid(i)
         regions = generate_regions(s)

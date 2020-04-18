@@ -26,13 +26,9 @@ class Point(object):
 
 class Region(object):
     def __init__(self, point1, point2):
-        if point1.mag() < point2.mag():
-            self.p1 = point1
-            self.p2 = point2
-        else:
-            self.p1 = point2
-            self.p2 = point1
-
+        self.p1 = point1
+        self.p2 = point2
+        
     @classmethod
     def from_coords(cls, x1, y1, z1, x2, y2, z2):
         return cls(Point(x1, y1, z1), Point(x2, y2, z2))
@@ -48,23 +44,39 @@ class Region(object):
                 (self.p2.y - self.p1.y + 1) * \
                 (self.p2.z - self.p1.z + 1)
 
+    def size(self):
+        return (abs(self.p2.x - self.p1.x + 1), 
+                abs(self.p2.y - self.p1.y + 1), 
+                abs(self.p2.z - self.p1.z + 1))
+
     def split(self):
         '''
-        to make this better, split on the largest dimension
-        to make it even better, make it recursive until all 
-            regions under max fill volume
+        Splits on the largest dimension, returns a tuple of the resulting
+        Regions,
         '''
-        if self.p1.y == self.p2.y:
+        x, y, z = self.size()
+
+        if x == 1 and y == 1 and z ==1:
             raise Exception("Cannot split region: {}", self)
+
+        # print(self, ":", (x,y,z))
+
         sec1_p1 = self.p1.copy()
         sec1_p2 = self.p2.copy()
         sec2_p1 = self.p1.copy()
         sec2_p2 = self.p2.copy()
-
-        sec1_p2.y = 0
-        sec2_p1.y = -1
         
-
+        if x >= y and x >= z:
+            sec1_p2.x = sec1_p1.x + x//2
+            sec2_p1.x = sec1_p1.x + x//2 + 1 
+        elif y >= x and y >= z:
+            sec1_p2.y = sec1_p1.y + y//2
+            sec2_p1.y = sec1_p1.y + y//2 + 1
+        else:
+            sec1_p2.z = sec1_p1.z + z//2
+            sec2_p1.z = sec1_p1.z + z//2 + 1
+ 
+        # print(Region(sec1_p1, sec1_p2), ":",Region(sec2_p1, sec2_p2))
         return Region(sec1_p1, sec1_p2), Region(sec2_p1, sec2_p2)
 
 
@@ -106,3 +118,16 @@ class HemisphereSolid(SphereSolid):
         self.limit_y_min = 0
 
 
+if __name__ == '__main__':
+    
+    for a, b in [(0, 150), (0, -150), (-100, 100)]:
+        rstx = Region(Point(a, 0, 0), Point(b, 100, 100)) 
+        rstx.split()
+
+        rsty = Region(Point(0, a, 0), Point(100, b, 100)) 
+        rsty.split()
+
+        rstz = Region(Point(0, 0, a), Point(100, 100, b)) 
+        rstz.split()
+
+        print()
