@@ -1,0 +1,18 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "TheRealPickle's Functions",
+        "name": "Pickle Functions",
+        "uuid": "adc9c894-c487-4a4e-a5c3-6d30dba92d6a",
+        "version": [ 0, 0, 1 ],
+        "min_engine_version": [ 1, 14, 0 ]
+    },
+    "modules": [
+        {
+            "description": "Functions from Pickle Functions",
+            "type": "data",
+            "uuid": "392c7228-1896-4fc0-ba86-1d3523f6a9f1",
+            "version": [0, 0, 1]
+        }
+    ]
+}
