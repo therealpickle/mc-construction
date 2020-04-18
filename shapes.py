@@ -79,6 +79,9 @@ class Region(object):
         # print(Region(sec1_p1, sec1_p2), ":",Region(sec2_p1, sec2_p2))
         return Region(sec1_p1, sec1_p2), Region(sec2_p1, sec2_p2)
 
+    def offset(self, point):
+        self.p1 += point
+        self.p2 += point
 
 class Shape(object):
     def __init__(self, origin=Point(0,0,0)):
@@ -88,16 +91,16 @@ class Shape(object):
         ''' Returns True if the point is contained in the shape '''
         raise Exception("Subclasses MUST implement this")
 
-
-
 # https://mathworld.wolfram.com/SphericalCap.html
 class SphereSolid(Shape):
-    def __init__(self, diameter, origin=None):
+    def __init__(self, diameter, origin=Point(0,0,0)):
         super(SphereSolid, self).__init__(origin=origin)
+        
         if diameter % 2 != 1:
             raise Exception("Cannot do even diameters: {}".format(diameter))
         if diameter <= 1:
             raise Exception("Cannot do diameter <= 1")
+        
         self.d = diameter
         self.r = self.d/2
         self.br = math.floor(self.r) # brick range

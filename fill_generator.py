@@ -77,18 +77,27 @@ def cmd_fill(regions, block):
     return commands
 
 if __name__ == '__main__':
-    print("Shape: size : commands : seconds to generate")
+    print("Shape      : size : commands : seconds to generate")
 
-    for i in range(17, 514, 16):
-        t0 = time.time()
-        s = shapes.HemisphereSolid(i)
-        regions = generate_regions(s)
-        print("Hemisphere: {} : {} : {:.6f}".format(i, len(regions), time.time()-t0))
+    if None: # large object generation
+        for n in range(1024, 8196+1, 1024):
+            t0 = time.time()
+            s = shapes.SphereSolid(n + 1)
+            regions = generate_regions(s)
+            print("Sphere     : {} : {} : {:.6f}".format(n, len(regions), time.time()-t0))
 
-    for i in range(17, 514, 16):
-        t0 = time.time()
-        s = shapes.SphereSolid(i)
-        regions = generate_regions(s)
-        print("Sphere:     {} : {} : {:.6f}".format(i, len(regions), time.time()-t0))
+    if True:
+        N = 512 + 2
+        for i in range(17, N, 16):
+            t0 = time.time()
+            s = shapes.HemisphereSolid(i)
+            regions = generate_regions(s)
+            print("Hemisphere : {} : {} : {:.6f}".format(i, len(regions), time.time()-t0))
+
+        for i in range(17, N, 16):
+            t0 = time.time()
+            s = shapes.SphereSolid(i)
+            regions = generate_regions(s)
+            print("Sphere     : {} : {} : {:.6f}".format(i, len(regions), time.time()-t0))
 
 
