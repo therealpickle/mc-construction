@@ -10,9 +10,6 @@ from fill_generator import *
 PACKAGE_BASE_PATH = "packbase"
 FUNCTION_PATH = os.path.join(PACKAGE_BASE_PATH,  "functions")
 
-print(PACKAGE_BASE_PATH)
-print(FUNCTION_PATH)
-
 PACKAGE_NAME = "Pickle_Functions"
 
 SERVER_ADDRESS = "mason@nastypickle"
@@ -55,30 +52,30 @@ MAX_CMDS = 10000
 
 def write_commands(fname, commands):
     pathname = os.path.join(FUNCTION_PATH, "{}.mcfunction".format(fname))
-
-    
     if len(commands) <= MAX_CMDS:
         with open(pathname, 'w') as f:
-            print("{}: {}".format(pathname,len(commands)))
             for cmd in commands:
                 f.write(cmd + "\n")
     else:
         raise Exception("Commands exceed limit ({})".format(len(commands)))
 
 if __name__ == '__main__':
-    for Shape, label in [(HemisphereSolid, 'dome'), (SphereSolid, 'sphere')]:
+    for Shape, label in [
+            (HemisphereSolid, 'dome'), 
+            (SphereSolid, 'sphere-shell')]:
         for diameter in [17, 33, 65]:
             outer = Shape(diameter)
-            outer.generate_regions()
+            outer_regions = generate_regions(outer)
             inner = Shape(diameter - 2)
-            inner.generate_regions()
+            inner_regions = generate_regions(inner)
 
-            cmds_outer = cmd_fill(outer.regions, 'glass')
-            cmds_inner = cmd_fill(inner.regions, 'air')
+            cmds_outer = cmd_fill(outer_regions, 'glass')
+            cmds_inner = cmd_fill(inner_regions, 'air')
 
-            fname = "{}-shell-r{}".format(label, (diameter-1)//2)
+            fname = "{}-d{}-glass".format(label, diameter)
             cmds = cmds_outer + cmds_inner
 
+            print("{}: {}".format(fname, len(cmds)))
             write_commands(fname, cmds)
         
 
