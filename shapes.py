@@ -86,8 +86,10 @@ class Region(object):
 class Shape(object):
     def __init__(self, origin=Point(0,0,0)):
         self.origin = origin
+        self.br = None # this must be set in subclass (brick range)
+        self.limit_y_min = None
 
-    def _is_contained(self, point):
+    def contains(self, point):
         ''' Returns True if the point is contained in the shape '''
         raise Exception("Subclasses MUST implement this")
 
@@ -105,14 +107,14 @@ class SphereSolid(Shape):
         self.r = self.d/2
         self.br = math.floor(self.r) # brick range
 
-        self.limit_y_min = None
+        
 
-    def _is_contained(self, point):
+    def contains(self, point):
         mag = point.mag()
         res = False
-        if mag < self.r-.01:
+        if mag < self.r - 0.02:
             res = True
-        # print(point, mag, self.r-.01, res)
+        # print(point, mag, self.r-.02, res)
         return res
 
 class HemisphereSolid(SphereSolid):
@@ -120,17 +122,46 @@ class HemisphereSolid(SphereSolid):
         super(HemisphereSolid,self).__init__(diameter, origin)
         self.limit_y_min = 0
 
+class TubeSolid(Shape):
+    def __init__(self, diameter, length, axis='z', origin=Point(0,0,0)):
+        super(TubeSolid, self).__init__(origin = origin)
+        if axis not in ('x', 'y', 'z'):
+            raise Exception("Invalid axis: {}".format(axis))
+        self.len = length
+        self.d = diameter
+        self.r = diameter // 2
+        self.br = max(self.len // 2, self.r)
+        self.axis = axis
+
+    def contains(self, point):
+        res = False
+        r = None
+        if self.axis == 'x':
+            if point.x < self.len:
+                pass
+        elif self.axis == 'y':
+            if point.y <= self.len:
+                pass
+        else:
+            if abs(point.z) <= self.len // 2:
+                r = math.sqrt(point.x**2 + point.y**2)
+                if r <= self.r:
+                    res = True
+        print(r, point, res)
+        return res
 
 if __name__ == '__main__':
-    
-    for a, b in [(0, 150), (0, -150), (-100, 100)]:
-        rstx = Region(Point(a, 0, 0), Point(b, 100, 100)) 
-        rstx.split()
 
-        rsty = Region(Point(0, a, 0), Point(100, b, 100)) 
-        rsty.split()
+    if 0:    
+        for a, b in [(0, 150), (0, -150), (-100, 100)]:
+            rstx = Region(Point(a, 0, 0), Point(b, 100, 100)) 
+            rstx.split()
 
-        rstz = Region(Point(0, 0, a), Point(100, 100, b)) 
-        rstz.split()
+            rsty = Region(Point(0, a, 0), Point(100, b, 100)) 
+            rsty.split()
 
-        print()
+            rstz = Region(Point(0, 0, a), Point(100, 100, b)) 
+            rstz.split()
+
+            print()
+
