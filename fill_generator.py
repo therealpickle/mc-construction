@@ -9,58 +9,6 @@ import shapes
 from shapes import Point, Region
 
 
-#Sphere     : 17 : 39 : 0.015627
-def generate_regions_2(shape):
-    regions = []
-    last_corner_points = []
-    for y in range(shape.br, -1, -1):
-        corner_points = []
-
-        #search for the x that brings the region into surface
-        p_range = shape.br
-        while not shape.contains(Point(p_range, y, 0)):
-            p_range -= 1
-            if p_range < 0:
-                break
-        if p_range < 0:
-            print("Nothing on y = {}".format(y))
-            continue
-
-        # search quadrant for corner points
-        for x in range(0,p_range + 1):
-            for z in range(0,p_range + 1):
-                p = Point(x, y, z)
-                pn = Point(x + 1, y, z)
-                pe = Point(x, y, z + 1)
-
-                if shape.contains(p):
-                    if not shape.contains(pn) and not shape.contains(pe):
-                        corner_points.append(p)
-
-        # mirror the point across all 3 axis to create a region
-        for p in corner_points:
-            # if p in last_corner_points:
-            #     print("{} in {}".format(p, last_corner_points))
-            #     continue
-
-            if (shape.limit_y_min is not None) and (-p.y < shape.limit_y_min):
-                r = Region(p, Point(-p.x, shape.limit_y_min, -p.z))
-            else:
-               r = Region(p, Point(-p.x, -p.y, -p.z))
-            
-            if r.volume() <= FILL_MAX_VOLUME:
-                regions.append(r)
-            else:
-                r1, r2 = r.split()
-                regions.append(r1)
-                regions.append(r2)
-
-
-        # print("y: {}, corners: {}".format(y, corner_points))
-        last_corner_points = corner_points
-
-    return regions
-
 def cmd_fill(regions, block):
     commands = []
     for r in regions:
