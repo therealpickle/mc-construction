@@ -219,21 +219,23 @@ if __name__ == '__main__':
 
     N = 256 + 2
     if DO_HEMISPHERE_BENCHMARK:
+        print("Hemisphere : diameter : commands : time")
         for i in range(17, N, 16):
             t0 = time.time()
             s = HemisphereSolid(i)
             regions = s.generate_regions()
             t1 = time.time()
-            print("Hemisphere : {} : {} : {:.6f}".format(i, len(regions), 
+            print("Hemisphere : {:8} : {:8} : {:.6f}".format(i, len(regions), 
                 t1-t0))
 
     if DO_SPHERE_BENCHMARK:
+        print("Sphere : diameter : commands : time")
         for i in range(17, N, 16):
             t0 = time.time()
             s = SphereSolid(i)
             regions = s.generate_regions()
             t1 = time.time()
-            print("Sphere     : {} : {} : {:.6f}".format(i, len(regions), 
+            print("Sphere : {:8} : {:8} : {:.6f}".format(i, len(regions), 
                 t1-t0))
 
 
