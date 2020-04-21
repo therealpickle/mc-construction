@@ -67,16 +67,24 @@ class Region(object):
         x, y, z = self.size()
         return  x * y * z
 
+    def range(self):
+        return ((min(self.p1.x, self.p2.x), max(self.p1.x, self.p2.x)),
+                (min(self.p1.y, self.p2.y), max(self.p1.y, self.p2.y)),
+                (min(self.p1.z, self.p2.z), max(self.p1.z, self.p2.z)))
+
     def size(self):
         return (abs(self.p2.x - self.p1.x) + 1, 
                 abs(self.p2.y - self.p1.y) + 1, 
                 abs(self.p2.z - self.p1.z) + 1)
 
-    def split(self):
+    def split(self, max_volume=32768):
         '''
-        Splits on the largest dimension, returns a tuple of the resulting
+        Splits on the largest dimension, returns a list of the resulting
         Regions,
         '''
+        if self.volume() <= max_volume:
+            return [self]
+
         x, y, z = self.size()
 
         if x == 1 and y == 1 and z ==1:
@@ -110,9 +118,13 @@ class Region(object):
                 r2.p1.z = middle
                 r1.p2.z = middle + 1
 
- 
         # print("{} ->split-> {} : {}".format(self, r1, r2))
-        return r1, r2
+        splits = []
+        for r in [r1, r2]:
+            for s in r.split(max_volume=max_volume):
+                splits.append(s)
+ 
+        return splits
 
     def offset(self, point):
         self.p1 += point
@@ -149,6 +161,17 @@ if __name__ == '__main__':
     SPLIT_TEST          = REGIONS_TESTS and True
     CORNER_POINTS_TEST  = REGIONS_TESTS and True
 
+    POINT_EQUALITY_TEST = True
+
+    if POINT_EQUALITY_TEST:
+        p1 = Point(1,1,1)
+        p2 = Point(1,1,1)
+        p3 = Point(2,2,2)
+        if p1 != p2:
+            raise Exception("Point equality broken: {} != {}".format(p1, p2))
+        if p2 == p3:
+            raise Exception("Point equality broken: {} != {}".format(p2, p3))
+
     if CORNER_POINTS_TEST:
         x1, y1, z1 = (0, 1, 2)
         x2, y2, z2 = (3, 4, 5)
@@ -166,30 +189,36 @@ if __name__ == '__main__':
                 raise Exception("{} not in corner_points: {}".format(p,cps))
 
     if SPLIT_TEST:
-        for tr, tr1, tr2 in [
-            (Region(Point(0, 0, 0), Point(0, 0, 9)), 
-                Region(Point(0, 0, 0), Point(0, 0, 4)),
-                Region(Point(0, 0, 5), Point(0, 0, 9))),
-            (Region(Point(0, 0, 9), Point(0, 0, 0)), 
-                Region(Point(0, 0, 0), Point(0, 0, 4)),
-                Region(Point(0, 0, 5), Point(0, 0, 9))),
-            (Region(Point(0, 0, 0), Point(0, 9, 0)), 
-                Region(Point(0, 0, 0), Point(0, 4, 0)),
-                Region(Point(0, 5, 0), Point(0, 9, 0))),
-            (Region(Point(0, 9, 0), Point(0, 0, 0)), 
-                Region(Point(0, 0, 0), Point(0, 4, 0)),
-                Region(Point(0, 5, 0), Point(0, 9, 0))),
-            (Region(Point(0, 0, 0), Point(9, 0, 0)), 
-                Region(Point(0, 0, 0), Point(4, 0, 0)),
-                Region(Point(5, 0, 0), Point(9, 0, 0))),
-            (Region(Point(9, 0, 0), Point(0, 0, 0)), 
-                Region(Point(0, 0, 0), Point(4, 0, 0)),
-                Region(Point(5, 0, 0), Point(9, 0, 0))),
-            ]:
+        def validate_split(region, splits):
+            xmin = ymin = zmin =  999999999
+            xmax = ymax = zmax = -999999999
+            for r in splits:
+                xr, yr, zr = r.range()
+                xmin = min(xmin, *xr)
+                ymin = min(ymin, *yr)
+                zmin = min(zmin, *zr)
+                xmax = max(xmax, *xr)
+                ymax = max(ymax, *yr)
+                zmax = max(zmax, *zr)
 
-            r1, r2 = tr.split()
-            if not ((r1 == tr1 and r2 == tr2) or (r1 == tr2 and r2 == tr1)): 
-                raise Exception(
-                    "Split on {}:\nTarget: {}, {}:\nResult: {}, {}".format(
-                        tr, tr1, tr2, r1, r2))
+            xr, yr, zr = region.range()
+            if xr != (xmin, xmax) or yr != (ymin, ymax) or xr != (xmin, xmax):
+                raise Exception("Region '{}' does not match the coverage of "
+                    "splits: {}".format(region, splits))
+
+            splits_vol = sum([r.volume() for r in splits])
+            rv = region.volume()
+            if rv != splits_vol:
+                raise Exception("Region '{}' volume ({}) does not match the "
+                    "sum of volumes ({}) of {}".format(region, rv, splits_vol, 
+                        splits))
+
+            # print([a.xyz() for a in [r.corner_points()[:2] for r in splits]])
+            # splits_min = [min(a) for a in [zip(b) for b in splits.corner_points()[:2]]]
+
+        for reg in (Region(Point(-32, -32, -32), Point( 31,  31,  31)),
+                    Region(Point(-32, -32, -32), Point( 32,  32,  32)),
+                    Region(Point(  0,   0,   0), Point( 0,    0,  1)),
+                    ):
+            validate_split(reg, reg.split())
 

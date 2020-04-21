@@ -63,6 +63,7 @@ if __name__ == '__main__':
     for Shape, label in [
             (HemisphereSolid, 'dome'), 
             (SphereSolid, 'sphere-shell')]:
+        
         for diameter in [17, 33, 65]:
             outer = Shape(diameter)
             outer_regions = generate_regions(outer)
@@ -78,4 +79,4 @@ if __name__ == '__main__':
             print("{}: {}".format(fname, len(cmds)))
             write_commands(fname, cmds)
         
-
+    # for length in [9, 17, 33]:

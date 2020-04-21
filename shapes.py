@@ -3,7 +3,7 @@
 import math
 from coords import Point, Region
 
-ADJ = 0.02
+ADJ = 0.125
 
 class Shape(object):
     def __init__(self, origin=Point(0,0,0)):
@@ -19,13 +19,10 @@ class Shape(object):
     # def generate_regions(self):
     #     raise Exception("Subclasses MUST implement this")        
 
-    def generate_regions(self, max_volume=32768):
+    def generate_regions_old(self, max_volume=32768):
         '''
         how to make this better: 
             * work with even diameters
-            * if there's layers that are identical (which can happen near y=0),
-              then duplicate regions are generated ... could probably search
-              for duplicate regions in the results
         '''
         if self.br is None:
             raise Exception("Brick Range (br) must be defined in self!")
@@ -43,7 +40,7 @@ class Shape(object):
                 p.x -= 1
                 if p.x < 0:
                     break
-            if p.x < 0:
+            if p.x < 0: # there's nothing in this layer
                 continue
             
             radius = p.x # x is now the radius of this layer
@@ -81,6 +78,56 @@ class Shape(object):
         
         return regions
 
+    def generate_regions(self, max_volume=32768):
+        '''
+        * find all corners in y layer
+        * for each cornerpoint that doesn't exist in layer above"
+            * create regions by mirroring corner points about all 3 axis
+            * apply limits
+            * split
+        * next y
+
+        how to make this better: 
+            * work with even diameters
+        '''
+        regions = []
+        last_corner_points = []
+
+        for y in range(self.br, -1, -1):
+            corner_points = []
+
+            x_start = self.br
+            for z in range(0, self.br + 1):
+                for x in range(x_start, -1, -1):
+                    p = Point(x, y, z)
+                    
+                    if self.contains(p):
+                        if not self.contains(Point(x, y, z + 1)):
+                            corner_points.append(p)
+                        x_start = p.x # start at this x for next z
+                        break # next z
+
+            # print("y: {}, n: {}, corners: {}".format(y, len(corner_points),
+            #     corner_points))
+
+            # mirror the point across all 3 axis to create a region
+            for p in corner_points:
+                plast = Point(p.x, p.y + 1, p.z)
+                if plast not in last_corner_points:
+                    r = Region(p, Point(-p.x, -p.y, -p.z))
+                    r.apply_limits(
+                        xmin=self.limits_min['x'], xmax=self.limits_max['x'],
+                        ymin=self.limits_min['y'], ymax=self.limits_max['y'],
+                        zmin=self.limits_min['z'], zmax=self.limits_max['z'])
+                    for sr in r.split(max_volume=max_volume):
+                        regions.append(sr)
+
+            last_corner_points = corner_points
+
+        return regions
+
+
+
 # https://mathworld.wolfram.com/SphericalCap.html
 class SphereSolid(Shape):
     def __init__(self, diameter, origin=Point(0,0,0)):
@@ -98,7 +145,7 @@ class SphereSolid(Shape):
     def contains(self, point):
         mag = point.mag()
         res = False
-        if mag <= (self.r - ADJ):
+        if mag <= (self.r + ADJ):
             res = True
         # print(point, mag, self.r-.02, res)
         return res
@@ -127,40 +174,75 @@ class TubeSolid(Shape):
         if self.axis == 'x':
             if abs(point.x) <= self.len // 2:
                 r = math.sqrt(point.y**2 + point.z**2)
-                if r <= self.r - ADJ:
+                if r <= self.r + ADJ:
                     res = True
         elif self.axis == 'y':
             if abs(point.y) <= self.len // 2:
                 r = math.sqrt(point.x**2 + point.z**2)
-                if r <= self.r - ADJ:
+                if r <= self.r + ADJ:
                     res = True
         else:
             if abs(point.z) <= self.len // 2:
                 r = math.sqrt(point.x**2 + point.y**2)
-                if r <= self.r - ADJ:
+                if r <= self.r + ADJ:
                     res = True
         return res
 
 # class ArchSolid
 
 if __name__ == '__main__':
+    import time
+
     TEST_GENERATE_REGIONS = True
+
+    DO_SPHERE_BENCHMARK     = True
+    DO_HEMISPHERE_BENCHMARK = True
 
     if TEST_GENERATE_REGIONS:
         # these are based on current benchmark, if needed, adjust
         # test vector = diameter, #regions
-        tv = ((9,16), (17, 39), (33, 137), (65, 750))
+        tv = ((9,12), (17, 36), (33, 102), (65, 582))
         for d, n in tv:
             s = SphereSolid(d)
+            t0 = time.time()
+            rs = s.generate_regions_old(max_volume=32768)
+            t1 = time.time()
             rs = s.generate_regions(max_volume=32768)
+            t2 = time.time()
+            # print("SphereSolid({}) : {} : {} : {}".format(d, t1-t0, t2-t1,
+            #     (t2-t1)/(t1-t0)))
             if len(rs) != n:
                 print("SphereSolid({}) generated {} regions instead "
                     "of {}".format(d, len(rs), n))
 
 
 
+    N = 512 + 2
+    if DO_HEMISPHERE_BENCHMARK:
+        for i in range(17, N, 16):
+            t0 = time.time()
+            s = HemisphereSolid(i)
+            regions = s.generate_regions()
+            t1 = time.time()
+            print("Hemisphere : {} : {} : {:.6f}".format(i, len(regions), 
+                t1-t0))
+            violation_count = 0
+            for r in regions:
+                if r.volume()>32768:
+                    violation_count += 1
+            print("violation_count: {}".format(violation_count))
 
-    if 1:
+    if DO_SPHERE_BENCHMARK:
+        for i in range(17, N, 16):
+            t0 = time.time()
+            s = SphereSolid(i)
+            regions = s.generate_regions()
+            t1 = time.time()
+            print("Sphere     : {} : {} : {:.6f}".format(i, len(regions), 
+                t1-t0))
+
+
+    if 0:
         from matplotlib import pyplot as plt
 
         def plot_point(ax, point):
@@ -187,7 +269,7 @@ if __name__ == '__main__':
         ax.set_ylabel("Z")
         ax.set_zlabel("Y")
 
-        s = TubeSolid(5, 17, axis = 'z')
+        s = TubeSolid(5, 17, axis = 'x')
         # s = SphereSolid(9)
         plot_shape(ax, s)
 
