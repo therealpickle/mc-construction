@@ -189,9 +189,17 @@ if __name__ == '__main__':
                 raise Exception("{} not in corner_points: {}".format(p,cps))
 
     if SPLIT_TEST:
+        MAX_VOLUME = 32768
         def validate_split(region, splits):
             xmin = ymin = zmin =  999999999
             xmax = ymax = zmax = -999999999
+
+            for r in splits:
+                v = r.volume()
+                if v > MAX_VOLUME:
+                    raise Exception("Split Result ({}) has volume {} > {}"
+                        "".format(r, v, MAX_VOLUME))
+
             for r in splits:
                 xr, yr, zr = r.range()
                 xmin = min(xmin, *xr)
@@ -218,7 +226,8 @@ if __name__ == '__main__':
 
         for reg in (Region(Point(-32, -32, -32), Point( 31,  31,  31)),
                     Region(Point(-32, -32, -32), Point( 32,  32,  32)),
-                    Region(Point(  0,   0,   0), Point( 0,    0,  1)),
+                    Region(Point(  0,   0,   0), Point(  0,   0,   1)),
+                    Region(Point(-99, -99, -99), Point( 99,  99,  99)),
                     ):
-            validate_split(reg, reg.split())
+            validate_split(reg, reg.split(max_volume=MAX_VOLUME))
 
