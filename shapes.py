@@ -93,9 +93,9 @@ class HemisphereSolid(SphereSolid):
         self.limits_min['y'] = 0
 
 
-class TubeSolid(Shape):
+class CylinderSolid(Shape):
     def __init__(self, diameter, length, axis='z', origin=Point(0,0,0)):
-        super(TubeSolid, self).__init__(origin = origin)
+        super(CylinderSolid, self).__init__(origin = origin)
         if axis not in ('x', 'y', 'z'):
             raise Exception("Invalid axis: {}".format(axis))
         self.len = length
@@ -123,7 +123,14 @@ class TubeSolid(Shape):
                     res = True
         return res
 
-# class ArchSolid
+class ArcTunnelSolid(CylinderSolid):
+    def __init__(self, diameter, length, axis='z', origin=Point(0,0,0)):
+        super(ArcTunnelSolid, self).__init__(diameter, length, axis=axis, 
+            origin=origin)
+        if axis == 'y':
+            raise Exception("Cannot do Arc Tunnel along 'y' axis.")
+
+        self.limits_min['y'] = 0;
 
 if __name__ == '__main__':
     import time
@@ -171,7 +178,7 @@ if __name__ == '__main__':
                 t1-t0))
 
 
-    if 0:
+    if 1:
         from matplotlib import pyplot as plt
 
         def plot_point(ax, point):
@@ -188,19 +195,19 @@ if __name__ == '__main__':
                 plot_region(ax, r)
 
             # make a fake region and plot it to keep axis equal
-            br = shape.br
+            br = shape.br + 1
             r = Region(Point(-br,-br,-br), Point(br, br, br))
             plot_region(ax, r)
 
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.set_xlabel("X")
-        ax.set_ylabel("Z")
-        ax.set_zlabel("Y")
 
-        s = TubeSolid(5, 17, axis = 'x')
+        s = ArcTunnelSolid(7, 17, axis = 'x')
         # s = SphereSolid(9)
         plot_shape(ax, s)
 
 
+        ax.set_xlabel("X")
+        ax.set_ylabel("Z")
+        ax.set_zlabel("Y")
         plt.show()
