@@ -16,68 +16,6 @@ class Shape(object):
         ''' Returns True if the point is contained in the shape '''
         raise Exception("Subclasses MUST implement this")
 
-    # def generate_regions(self):
-    #     raise Exception("Subclasses MUST implement this")        
-
-    def generate_regions_old(self, max_volume=32768):
-        '''
-        how to make this better: 
-            * work with even diameters
-        '''
-        if self.br is None:
-            raise Exception("Brick Range (br) must be defined in self!")
-
-        z = 0
-        regions = []
-        # only do top half
-        for y in range(self.br, -1, -1):
-            points = []
-            x = self.br
-
-            #search for the x that brings the region into surface
-            p = Point(x,y,z)
-            while not self.contains(p):
-                p.x -= 1
-                if p.x < 0:
-                    break
-            if p.x < 0: # there's nothing in this layer
-                continue
-            
-            radius = p.x # x is now the radius of this layer
-
-            while p.z < radius:
-                # expand z until the point is no longer contained
-                while self.contains(p):
-                    p.z += 1
-                p.z -= 1 # bring it back in
-
-                points.append(p.copy())
-
-                if p.z + 1 > radius:
-                    break
-
-                while not self.contains(Point(p.x, p.y, p.z+1)):
-                    p.x -= 1 # pull x down one
-
-            
-            # mirror the point across all 3 axis to create a region
-            for p in points:
-                r = Region(p, Point(-p.x, -p.y, -p.z))
-                r.apply_limits(
-                    xmin=self.limits_min['x'], xmax=self.limits_max['x'],
-                    ymin=self.limits_min['y'], ymax=self.limits_max['y'],
-                    zmin=self.limits_min['z'], zmax=self.limits_max['z'])
-                if r.volume() <= max_volume:
-                    regions.append(r)
-                else:
-                    r1, r2 = r.split()
-                    regions.append(r1)
-                    regions.append(r2)
-
-            # print("y: {}, points({}): {}".format(y, len(points), []))
-        
-        return regions
-
     def generate_regions(self, max_volume=32768):
         '''
         * find all corners in y layer
@@ -127,8 +65,6 @@ class Shape(object):
         return regions
 
 
-
-# https://mathworld.wolfram.com/SphericalCap.html
 class SphereSolid(Shape):
     def __init__(self, diameter, origin=Point(0,0,0)):
         super(SphereSolid, self).__init__(origin=origin)
@@ -149,7 +85,6 @@ class SphereSolid(Shape):
             res = True
         # print(point, mag, self.r-.02, res)
         return res
-
 
 
 class HemisphereSolid(SphereSolid):
@@ -195,27 +130,24 @@ if __name__ == '__main__':
 
     TEST_GENERATE_REGIONS = True
 
-    DO_SPHERE_BENCHMARK     = True
-    DO_HEMISPHERE_BENCHMARK = True
+    DO_BENCHMARKS           = False
+    DO_SPHERE_BENCHMARK     = DO_BENCHMARKS and True
+    DO_HEMISPHERE_BENCHMARK = DO_BENCHMARKS and True
 
     if TEST_GENERATE_REGIONS:
         # these are based on current benchmark, if needed, adjust
         # test vector = diameter, #regions
-        tv = ((9,12), (17, 36), (33, 102), (65, 582))
+        tv = ((9,12), (17, 36), (33, 102), (65, 582), (81, 1656), (97, 4151))
         for d, n in tv:
             s = SphereSolid(d)
             t0 = time.time()
-            rs = s.generate_regions_old(max_volume=32768)
-            t1 = time.time()
             rs = s.generate_regions(max_volume=32768)
-            t2 = time.time()
+            t1 = time.time()
             # print("SphereSolid({}) : {} : {} : {}".format(d, t1-t0, t2-t1,
             #     (t2-t1)/(t1-t0)))
             if len(rs) != n:
-                print("SphereSolid({}) generated {} regions instead "
+                print("!!!! SphereSolid({}) generated {} regions instead "
                     "of {}".format(d, len(rs), n))
-
-
 
     N = 256 + 2
     if DO_HEMISPHERE_BENCHMARK:
