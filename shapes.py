@@ -217,7 +217,7 @@ if __name__ == '__main__':
 
 
 
-    N = 512 + 2
+    N = 256 + 2
     if DO_HEMISPHERE_BENCHMARK:
         for i in range(17, N, 16):
             t0 = time.time()
@@ -226,11 +226,6 @@ if __name__ == '__main__':
             t1 = time.time()
             print("Hemisphere : {} : {} : {:.6f}".format(i, len(regions), 
                 t1-t0))
-            violation_count = 0
-            for r in regions:
-                if r.volume()>32768:
-                    violation_count += 1
-            print("violation_count: {}".format(violation_count))
 
     if DO_SPHERE_BENCHMARK:
         for i in range(17, N, 16):
